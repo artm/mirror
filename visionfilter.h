@@ -8,6 +8,10 @@
 #include <QObject>
 #include <QHash>
 
+namespace Ui {
+    class MirrorWindow;
+}
+
 namespace Mirror {
 
 class VisionFilter : public QObject
@@ -15,6 +19,8 @@ class VisionFilter : public QObject
     Q_OBJECT
 public:
     explicit VisionFilter(Mirror::CompositeView * canvas, QObject *parent = 0);
+
+    virtual void configureGUI(Ui::MirrorWindow *) {}
 
     const QList<QString> slotsOrder() const { return m_slotsOrder; }
 
@@ -25,7 +31,7 @@ public slots:
     void setVisibleSlot(const QString& slot) { Q_ASSERT( m_slots.contains(slot)); m_visibleSlot = slot; }
 
 protected:
-    virtual void filter(const cv::Mat& frame);
+    virtual void filter(const cv::Mat& frame) = 0;
 
     void appendVideoSlot(const QString& name, const cv::Mat * slot);
 
@@ -36,8 +42,6 @@ protected:
     QHash<QString, const cv::Mat * > m_slots;
     QString m_visibleSlot;
 
-    // FIXME move these to the apropriate ancestor
-    cv::Mat m_scaled, m_hsv, m_hue, m_poster;
 };
 
 } // namespace Mirror

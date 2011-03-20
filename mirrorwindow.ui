@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>548</height>
+    <width>633</width>
+    <height>415</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>640</width>
+     <width>633</width>
      <height>22</height>
     </rect>
    </property>
@@ -57,76 +57,37 @@
     </property>
     <addaction name="actionCapture"/>
     <addaction name="separator"/>
-    <addaction name="actionInput"/>
-    <addaction name="actionGreyscale"/>
-    <addaction name="actionDownsampled"/>
-    <addaction name="actionContrast"/>
-    <addaction name="separator"/>
     <addaction name="actionFullscreen"/>
    </widget>
    <addaction name="menuView"/>
   </widget>
-  <widget class="QToolBar" name="mainToolBar">
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="actionCapture"/>
-  </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <widget class="QDockWidget" name="dockWidget">
+  <widget class="QDockWidget" name="mirrorDock">
    <property name="minimumSize">
     <size>
-     <width>218</width>
-     <height>116</height>
+     <width>304</width>
+     <height>138</height>
     </size>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QFormLayout" name="formLayout">
-     <property name="margin">
-      <number>2</number>
+   <widget class="QWidget" name="mirrorDockContents">
+    <layout class="QFormLayout" name="mirrorDockForm">
+     <property name="fieldGrowthPolicy">
+      <enum>QFormLayout::FieldsStayAtSizeHint</enum>
      </property>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Subsampling</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="scaleSelector">
-       <property name="currentIndex">
-        <number>1</number>
-       </property>
-       <item>
-        <property name="text">
-         <string>none</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>x 1/2</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>x 1/4</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>x 1/8</string>
-        </property>
-       </item>
-      </widget>
-     </item>
+     <property name="horizontalSpacing">
+      <number>-1</number>
+     </property>
+     <property name="verticalSpacing">
+      <number>-1</number>
+     </property>
+     <property name="margin">
+      <number>1</number>
+     </property>
      <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="stageSelectorLabel">
        <property name="text">
         <string>Filter stage</string>
        </property>
@@ -150,50 +111,6 @@
    </property>
    <property name="shortcut">
     <string>Return</string>
-   </property>
-  </action>
-  <action name="actionInput">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Input</string>
-   </property>
-   <property name="shortcut">
-    <string>1</string>
-   </property>
-  </action>
-  <action name="actionGreyscale">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Greyscale</string>
-   </property>
-   <property name="shortcut">
-    <string>2</string>
-   </property>
-  </action>
-  <action name="actionDownsampled">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Downsampled</string>
-   </property>
-   <property name="shortcut">
-    <string>3</string>
-   </property>
-  </action>
-  <action name="actionContrast">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Contrast++</string>
-   </property>
-   <property name="shortcut">
-    <string>4</string>
    </property>
   </action>
   <action name="actionFullscreen">

@@ -8,10 +8,10 @@
 
 namespace Mirror {
 
-class CVLayer : public QGraphicsItemGroup
+class ScratchGraphics : public QGraphicsItemGroup
 {
 public:
-    CVLayer(QGraphicsItem * parent = 0, QGraphicsScene * scene = 0);
+    ScratchGraphics(QGraphicsItem * parent = 0, QGraphicsScene * scene = 0);
 
     QRectF makeQt(const cv::Rect& rect) { return QRectF( rect.x, rect.y, rect.width, rect.height ); }
 

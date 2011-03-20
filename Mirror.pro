@@ -13,15 +13,19 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mirrorwindow.cpp \
     compositeview.cpp \
-    cvlayer.cpp \
     visionfilter.cpp \
-    util.cpp
+    util.cpp \
+    footballtracker.cpp \
+    scratchgraphics.cpp \
+    facetracker.cpp
 
 HEADERS  += mirrorwindow.h \
     compositeview.h \
-    cvlayer.h \
     visionfilter.h \
-    util.h
+    util.h \
+    footballtracker.h \
+    scratchgraphics.h \
+    facetracker.h
 
 FORMS    += mirrorwindow.ui
 
