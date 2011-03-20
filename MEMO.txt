@@ -1,0 +1,4 @@
+opencv:
+
+I have built the 2.2.0 version using cmake.
+

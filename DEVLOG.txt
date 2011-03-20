@@ -1,0 +1,47 @@
+[x] Detect and show eyes
+    ( ) Better: given two sets of potential eyes find best pair:
+        ( ) pair scores: size difference, y difference
+        --- works for now, but eats a lot of CPU.
+[ ] Transform / crop the face to normalize the eyes distance / orientation
+    - find the rotated square around the face (from the eyes down then grow / shift)
+    - find the affine matrix to get it into 100x100
+    - warpAffine(... )
+[ ] Move view controls to the dock
+[ ] Add min face size control to the dock
+[ ] Display current frame sizes and FPS somewhere
+[ ] Offline face learner
+[ ] Online face matcher in a separate thread
+
+Detect faces and show them.
+
+Should this use verilook? It gives us eye positions...
+
+CV can do that as well. What I need is:
+
+For robot control don't need eyes or matching - just make sure it runs fast.
+But need eyes for preprocessing / matching.
+
+Now: make faster, need scaled down version.
+Now: draw the rectangle(s) over video.
+Stretching the contrast helped really well.
+Run left/right eye cascades on the two regions (but cut them out of the original grey).
+
+****
+
+My goal now is to capture video with OpenCV but show it with Qt...
+Capture starts now. No camera selection yet (default camera) - that's for later.
+
+Now: how to display? I should be able to display one of the several stages of the video filters and draw stuff on top. Custom widget seems apropriate.
+
+Or may be: QGr.View with all them layers like?
+
+The structure should be something like:
+- video is a root item which reacts on resizing
+    - under the root are pixmap items and overlay graphics
+- HUD is a different root item which reacts on resizing differently
+    - under the HUD are HUD graphics
+
+
+To display an image I need to convert it from OpenCV's Mat to Qt's QPixmap (or similar).
+The simplest is if I convert Mat to some well known format first.
+
