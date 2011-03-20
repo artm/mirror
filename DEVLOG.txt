@@ -1,3 +1,55 @@
+
+A flexible way to do video exploration:
+
+[x] a VisionFilter registers a number of cv::Mat's in a dictionary
+[x] it uses them directly because they are also its fields
+[x] default 'incomingFrame()' does:
+    1. store the incoming in the 'input' slot
+    2. calls virtual filter() function
+    3. displays selected slot
+
+* * *
+
+a sidetrack: make the mirror easier to readjust for different purposes.
+[x] drop movie support
+[x] (compile time) configurable tick() handler
+    - should really be a class that has an incoming frame slot and can connect to the canvas
+[ ] tick() handler dependent controls
+
+football players tracking:
+
+1. background learning
+    - simplest: a movie of the empty field
+        - not always possible
+        - will change with time (sun, clouds)
+    - statistical:
+        - collect histograms of image tiles for some time
+        - for each tile: find similar histograms that occur the oftenest, assume that to be the background
+            - this requires automatic classification of the histograms
+    - dynamic
+        - start with initial background (e.g. all green, or a single shot of empty field or statistically collected)
+        - after blob detection use remainder of the image to update the tile histograms
+            - see codebooks (p. 278)
+2. detect areas different from the background
+    - given tile histogram generate backprojection
+    - combine all tile's backprojections to a single probability image
+    - threshold / morphological operations
+3. find blob shapes
+    - contours of "white" areas
+4. calculate histograms inside the blobs
+5. classify the blobs based on area / histogram
+6. blob location
+    - use mid-lowest point as blob coordinates (in case of a single player corresponds to feet at the ground level)
+    - rectify / unproject based on 4 points
+
+Extra considerations:
+- cvPyrMeanShiftFiltering is slow but simplifies the image a lot. helps to keep the histograms distinct. when to use it? may be to generate the inital histograms.
+- the furthest background (in the test video) can be problematic, but as long as their uniforms are bright and in contrast with the background it's ok
+- it would be clever to perspective-correct image when scaling down: minimize amount of processing for the foreground and loss of detail for the background.
+    - TODO find which opencv geometric transformation functions does it, there is one that can do both in one go.
+
+* * *
+
 [x] Detect and show eyes
     ( ) Better: given two sets of potential eyes find best pair:
         ( ) pair scores: size difference, y difference

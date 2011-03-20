@@ -11,6 +11,9 @@
 #include <highgui.h>
 
 #include "cvlayer.h"
+#include "visionfilter.h"
+
+class QMimeData;
 
 namespace Ui {
     class MirrorWindow;
@@ -24,6 +27,9 @@ public:
     explicit MirrorWindow(QWidget *parent = 0);
     ~MirrorWindow();
 
+signals:
+    void incomingFrame(const cv::Mat& frame);
+
 public slots:
     void setCapture(bool on);
     void tick();
@@ -35,8 +41,9 @@ public slots:
     void onScaleSelected(int index) { m_scale = 1.0 / (qreal)(1 << index); }
     void setFullscreen(bool on);
 
+    void loadFile(const QMimeData* mimeData);
+
 private:
-    static QImage CvMat2QImage(const cv::Mat& cvmat);
     enum Show {
         Input,
         Grey,
@@ -64,13 +71,12 @@ private:
     Mirror::CVLayer * m_faceGfx;
     QBrush m_eyeBrush;
 
-    QGraphicsPixmapItem * m_videoItem;
     Show m_videoLayer;
     cv::Mat m_frames[FrameCount];
 
     qreal m_scale;
+    Mirror::VisionFilter * m_filter;
 
-    static QVector<QRgb> s_greyTable;
 };
 
 #endif // MIRRORWINDOW_H

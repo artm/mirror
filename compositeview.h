@@ -3,6 +3,8 @@
 
 #include <QGraphicsView>
 
+class QMimeData;
+
 namespace Mirror {
 
 class CompositeView : public QGraphicsView
@@ -12,10 +14,14 @@ public:
     explicit CompositeView(QWidget *parent = 0);
 
 signals:
-
-public slots:
+     void fileDrop(const QMimeData *mimeData = 0);
 
 protected:
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dragMoveEvent(QDragMoveEvent *event);
+    void dragLeaveEvent(QDragLeaveEvent *event);
+    void dropEvent(QDropEvent *event);
+
     void resizeEvent(QResizeEvent *event);
 
 };

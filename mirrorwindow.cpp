@@ -1,11 +1,10 @@
-#include <QtDebug>
-#include <QFileInfo>
-#include <QResizeEvent>
-
 #include "mirrorwindow.h"
 #include "ui_mirrorwindow.h"
 
-QVector<QRgb> MirrorWindow::s_greyTable;
+#include <QtDebug>
+#include <QFileInfo>
+#include <QResizeEvent>
+#include <QUrl>
 
 MirrorWindow::MirrorWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -15,23 +14,17 @@ MirrorWindow::MirrorWindow(QWidget *parent)
     , m_videoLayer(Input)
     , m_scale(0.5)
 {
-    for (int i = 0; i < 256; i++){
-        s_greyTable.push_back(qRgb(i, i, i));
-    }
-
     ui->setupUi(this);
 
     QGraphicsScene * scene = new QGraphicsScene(ui->composite);
     ui->composite->setScene( scene );
 
-    QPixmap p(640, 480);
-    p.fill(Qt::black);
-    m_videoItem = scene->addPixmap( p );
-
     m_faceGfx = new Mirror::CVLayer();
     scene->addItem( m_faceGfx );
 
     ui->composite->setSceneRect(0,0,640,480);
+
+    connect( ui->composite, SIGNAL(fileDrop(const QMimeData*)), SLOT(loadFile(const QMimeData*)));
 
     QActionGroup * showGroup = new QActionGroup(this);
     showGroup->addAction(ui->actionInput);
@@ -51,6 +44,13 @@ MirrorWindow::MirrorWindow(QWidget *parent)
 
     connect( &m_metro, SIGNAL(timeout()), SLOT(tick()) );
 
+    m_filter = new Mirror::VisionFilter( ui->composite );
+    connect( this, SIGNAL(incomingFrame(const cv::Mat&)), m_filter, SLOT(incomingFrame(const cv::Mat&)) );
+    foreach(QString stage, m_filter->slotsOrder()) {
+        ui->stageSelector->addItem(stage);
+    }
+    connect( ui->stageSelector, SIGNAL(activated(QString)), m_filter, SLOT(setVisibleSlot(QString)) );
+
     m_resourcesRoot = QDir(QCoreApplication::applicationDirPath () + "/../../../Resources/");
     loadDetector(m_faceDetector, "lbpcascades/lbpcascade_frontalface.xml");
     //loadDetector(m_faceDetector, "haarcascades/haarcascade_frontalface_alt2.xml");
@@ -66,6 +66,14 @@ MirrorWindow::MirrorWindow(QWidget *parent)
 MirrorWindow::~MirrorWindow()
 {
     delete ui;
+}
+
+void MirrorWindow::loadFile(const QMimeData* mimeData)
+{
+    qDebug() << "URLs: " << mimeData->urls();
+
+
+    m_camera.open( mimeData->urls()[0].path().toStdString() );
 }
 
 void MirrorWindow::loadDetector(cv::CascadeClassifier& detector, QString fname)
@@ -88,27 +96,12 @@ void MirrorWindow::setCapture(bool on)
     }
 }
 
-QImage MirrorWindow::CvMat2QImage(const cv::Mat& cvmat)
-{
-    int height = cvmat.rows;
-    int width = cvmat.cols;
-
-    if (cvmat.depth() == CV_8U && cvmat.channels() == 3) {
-        QImage img((const uchar*)cvmat.data, width, height, cvmat.step.p[0], QImage::Format_RGB888);
-        return img.rgbSwapped();
-    } else if (cvmat.depth() == CV_8U && cvmat.channels() == 1) {
-        QImage img((const uchar*)cvmat.data, width, height, cvmat.step.p[0], QImage::Format_Indexed8);
-        img.setColorTable(s_greyTable);
-        return img;
-    } else {
-        qWarning() << "Image cannot be converted.";
-        return QImage();
-    }
-}
-
 void MirrorWindow::tick()
 {
     m_camera >> m_frames[Input];
+    emit incomingFrame(m_frames[Input]);
+
+#ifdef _NEVER_DEF_
 
     // grey will have the same dimensions as input
     cv::cvtColor( m_frames[Input], m_frames[Grey], CV_RGB2GRAY);
@@ -155,6 +148,7 @@ void MirrorWindow::tick()
     p.convertFromImage(CvMat2QImage(m_frames[m_videoLayer]));
     m_videoItem->setPixmap( p );
     m_videoItem->setScale( 640.0 / (float)p.width() );
+#endif
 }
 
 void MirrorWindow::detectEye(cv::CascadeClassifier& detector, const cv::Rect& roi, std::vector<cv::Rect>& rects)
