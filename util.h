@@ -2,7 +2,7 @@
 #define UTIL_H
 
 #include <QImage>
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 
 namespace Mirror {
 

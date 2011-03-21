@@ -2,6 +2,7 @@
 #include "scratchgraphics.h"
 #include "ui_mirrorwindow.h"
 
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <QCoreApplication>
 
@@ -13,7 +14,6 @@ FaceTracker::FaceTracker(Mirror::CompositeView * canvas, QObject *parent)
     , m_scale(0.5)
 {
     QGraphicsScene *  scene = canvas->scene();
-
     m_faceGfx = new Mirror::ScratchGraphics();
     scene->addItem( m_faceGfx );
 

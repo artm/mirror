@@ -3,7 +3,7 @@
 
 #include "compositeview.h"
 
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 
 #include <QObject>
 #include <QHash>

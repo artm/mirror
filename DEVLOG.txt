@@ -90,6 +90,22 @@ Extra considerations:
 - it would be clever to perspective-correct image when scaling down: minimize amount of processing for the foreground and loss of detail for the background.
     - TODO find which opencv geometric transformation functions does it, there is one that can do both in one go.
 
+Learning the field:
+1. learning field color histogram
+1.1. assume the field is green with white: have a default field histogram ready or let user rubber band a small portion to start it off
+    (best a portion including light, shadow on both grass and white markings).
+1.2. backproject the histogram onto the frame, collect pixels above sertain threshold into a field mask, calculate histogram of these pixels - this will be the new histogram
+1.3. repeat increasing threshold until certain level of confidence / accuracy. Now we have the current field histogram
+2. learning field position inside the frame
+2.1. backproject field histogram onto current frame
+2.2. do a morphological operation to fix small holes
+2.3. select the largest contour and find its convex hull, around 6 corners. That's the field area
+3. field shape fitting
+3.1. divide the field into several roughly defined areas
+3.2. search for features (corners of white marking) inside each area
+3.3. each found corner corresponds to exact football (X,Y) -> use found corners to find tracking area, perspective correction and lens undistortion parameters
+
+
 * * *
 
 A flexible way to do video exploration:
@@ -111,3 +127,14 @@ stagewise refactoring towards modular filter support:
 [x] remove the toolbar
 [x] digit keys to stage selector: add key event handler to main window and react on digits there
 
+* * *
+
+[x] load the field-sample and take its histogram. this will be the starting field histogram
+[-] backproject, threshold, update histogram (working field histogram)
+[x] backproject, threshold, close, find blobs, take the largest, take its convex hull, this will be the field
+    [ ] if several contours - keep the largest
+    [ ] ROI - hull's bounding rect
+    [ ] mask - draw hull as white
+
+[ ] bg/fg segmentation: once we have an ROI and a mask do background detection, then inverse threshold and morph dilate
+[ ] find all countours and show them as little blobular shapes

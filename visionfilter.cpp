@@ -10,7 +10,7 @@ VisionFilter::VisionFilter(Mirror::CompositeView * canvas, QObject *parent)
     , m_canvas(canvas)
 {
     QPixmap p(640, 480);
-    p.fill(Qt::black);
+    //p.fill(Qt::black);
     m_videoLayer = m_canvas->scene()->addPixmap( p );
 
     m_visibleSlot = "input";
@@ -36,7 +36,7 @@ void VisionFilter::incomingFrame(const cv::Mat& frame)
         p.convertFromImage(Mirror::CvMat2QImage( *m_slots[m_visibleSlot] ));
         m_videoLayer->setPixmap( p );
         // fit width (?)
-        m_videoLayer->setScale( 640.0 / (float)p.width() );
+        m_videoLayer->setScale( (float)frame.cols / (float)p.width() );
 
     }
 }

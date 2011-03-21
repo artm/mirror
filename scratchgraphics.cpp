@@ -1,6 +1,8 @@
 #include "scratchgraphics.h"
 
 #include <QGraphicsScene>
+#include <QVector>
+#include <QPointF>
 
 namespace Mirror {
 
@@ -32,6 +34,30 @@ void ScratchGraphics::addLine( const QLineF& line, QPen pen)
     QGraphicsLineItem * item = new QGraphicsLineItem(line);
     addToGroup( item );
     item->setPen( pen );
+}
+
+void ScratchGraphics::addContour( std::vector< cv::Point > contour, QPen pen, QBrush brush)
+{
+    QVector< QPointF > points;
+    foreach(cv::Point p, contour) {
+        points.append( QPointF( p.x, p.y ) );
+    }
+    QGraphicsPolygonItem * item = new QGraphicsPolygonItem( QPolygonF(points) );
+    addToGroup( item );
+    item->setPen( pen );
+    item->setBrush( brush );
+}
+
+void ScratchGraphics::addContour( std::vector< cv::Point > contour, std::vector<int> idx, QPen pen, QBrush brush)
+{
+    QVector< QPointF > points;
+    foreach(int i, idx) {
+        points.append( QPointF( contour[i].x, contour[i].y ) );
+    }
+    QGraphicsPolygonItem * item = new QGraphicsPolygonItem( QPolygonF(points) );
+    addToGroup( item );
+    item->setPen( pen );
+    item->setBrush( brush );
 }
 
 } // namespace Mirror

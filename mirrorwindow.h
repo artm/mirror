@@ -7,8 +7,8 @@
 #include <QDir>
 #include <QBrush>
 
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "scratchgraphics.h"
 
@@ -38,12 +38,13 @@ public slots:
     void tick();
     void setFullscreen(bool on);
     void loadFile(const QMimeData* mimeData);
+    void loadFile(const QString& path);
 
 protected:
     void keyReleaseEvent(QKeyEvent * event);
 
     Ui::MirrorWindow *ui;
-    cv::VideoCapture m_camera;
+    cv::VideoCapture * m_camera;
     QTimer m_metro;
     Mirror::VisionFilter * m_filter;
 };

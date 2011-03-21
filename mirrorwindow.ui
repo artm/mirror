@@ -110,7 +110,7 @@
     <string>Start/Stop video capture</string>
    </property>
    <property name="shortcut">
-    <string>Return</string>
+    <string>Ctrl+C</string>
    </property>
   </action>
   <action name="actionFullscreen">
