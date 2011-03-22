@@ -27,7 +27,7 @@ MirrorWindow::MirrorWindow(QWidget *parent)
     connect( &m_metro, SIGNAL(timeout()), SLOT(tick()) );
 
     //m_filter = new Mirror::FaceTracker( ui->composite );
-    m_filter = new Mirror::FootballTracker( ui->composite );
+    //m_filter = new Mirror::FootballTracker( ui->composite );
 
     connect( this, SIGNAL(incomingFrame(const cv::Mat&)), m_filter, SLOT(incomingFrame(const cv::Mat&)) );
 
