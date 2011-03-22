@@ -138,3 +138,12 @@ stagewise refactoring towards modular filter support:
 
 [ ] bg/fg segmentation: once we have an ROI and a mask do background detection, then inverse threshold and morph dilate
 [ ] find all countours and show them as little blobular shapes
+
+* * *
+
+(Tue Mar 22)
+
+switching to verilook again.
+
+made a wizard for Mirror::VisionFilter subclasses.
+

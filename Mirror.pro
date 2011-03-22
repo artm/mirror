@@ -17,7 +17,8 @@ SOURCES += main.cpp\
     util.cpp \
     footballtracker.cpp \
     scratchgraphics.cpp \
-    facetracker.cpp
+    facetracker.cpp \
+    verilookdetector.cpp
 
 HEADERS  += mirrorwindow.h \
     compositeview.h \
@@ -25,7 +26,8 @@ HEADERS  += mirrorwindow.h \
     util.h \
     footballtracker.h \
     scratchgraphics.h \
-    facetracker.h
+    facetracker.h \
+    verilookdetector.h
 
 FORMS    += mirrorwindow.ui
 

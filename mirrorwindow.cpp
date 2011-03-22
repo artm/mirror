@@ -1,7 +1,9 @@
 #include "mirrorwindow.h"
 #include "ui_mirrorwindow.h"
+
 #include "footballtracker.h"
 #include "facetracker.h"
+#include "verilookdetector.h"
 
 #include <QtDebug>
 #include <QFileInfo>
@@ -28,6 +30,7 @@ MirrorWindow::MirrorWindow(QWidget *parent)
 
     //m_filter = new Mirror::FaceTracker( ui->composite );
     //m_filter = new Mirror::FootballTracker( ui->composite );
+    m_filter = new Mirror::VerilookDetector( ui->composite, this );
 
     connect( this, SIGNAL(incomingFrame(const cv::Mat&)), m_filter, SLOT(incomingFrame(const cv::Mat&)) );
 
