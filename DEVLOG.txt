@@ -147,3 +147,31 @@ switching to verilook again.
 
 made a wizard for Mirror::VisionFilter subclasses.
 
+Verilook SDK is in ~/SDK/VeriLook_3_2_Standard_SDK/VL32/...
+Let's try adding the right things to include / library search paths...
+
+... roll back
+Verilook include / lib on a mac seem to be in /Library/Verilook
+So...
+
+- Let's see if we can make it include / initialize verilook stuff.
+
+- Now that it was forced to recompile/relink it complains that I don't have the right dylibs:
+  "warning: in /Library/Verilook/lib/libNLExtractor.dylib, missing required architecture x86_64 in file"
+- I should probably reinstall verilook sdk. how?
+  - just reinstalling from .pkg didn't work - installs 32bit versions
+  - see if I have other versions of the SDK downloaded... no
+  - downloaded SDK 3.3 (there is also 4.0, will download that as well, just to test)
+  - apparently SDK 3.3 installs dynlibs into /Library/Frameworks/Neurotechnology/
+    - includes aren't installed at all, but we can find them...
+  - libs are universal PPC/i386(32bit). foketifok...
+  - let's try 4.0
+    - universal PPC/i386/x86_64
+    - links ok, can't get no license...
+      - yes we can (activation wasn't running)
+  - oops, need to refer to the correct includes again...
+  - ok, license obtain/release works. let's see if we can detect faces in
+    video coming from opencv...
+    - yes. now the eyes (but don't need eyes always, have a boolean flag).
+
+- And when actually calling some verilook API it can't link.

@@ -18,7 +18,9 @@ SOURCES += main.cpp\
     footballtracker.cpp \
     scratchgraphics.cpp \
     facetracker.cpp \
-    verilookdetector.cpp
+    verilookdetector.cpp \
+    face.cpp \
+    verilookdetectorprivate.cpp
 
 HEADERS  += mirrorwindow.h \
     compositeview.h \
@@ -27,7 +29,9 @@ HEADERS  += mirrorwindow.h \
     footballtracker.h \
     scratchgraphics.h \
     facetracker.h \
-    verilookdetector.h
+    verilookdetector.h \
+    face.h \
+    verilookdetectorprivate.h
 
 FORMS    += mirrorwindow.ui
 
@@ -57,5 +61,11 @@ LIBS += -lopencv_calib3d -lopencv_contrib -lopencv_features2d -lopencv_flann -lo
 LIBS += -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_objdetect -lopencv_ts -lopencv_video -lopencv_core
 # OpenCV dependencies on a mac (needed when linking against static opencv)
 macx:LIBS += -framework AGL -framework OpenGL  -framework Foundation -framework QTKit -framework Cocoa -framework QuartzCore
+
+# Verilook
+# TODO: make this optional (football tracker shouldn't depend on verilook)
+# or make vision filters plugins loadable at run-time... (much later)
+macx:INCLUDEPATH += /Users/artm/SDK/VeriLook_4_0_Standard_SDK/include/MacOSX
+macx:LIBS += -L/Library/Frameworks/Neurotechnology -lNExtractors -lNMatchers -lNTemplates -lNCore -lNImages -lNLicensing
 
 RESOURCES +=

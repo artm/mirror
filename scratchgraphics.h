@@ -25,6 +25,7 @@ signals:
 public slots:
     void clear();
     void addRect( const cv::Rect& rect, QPen pen = s_defaultPen, QBrush brush = s_defaultBrush);
+    void addRect( const QRectF& rect, QPen pen = s_defaultPen, QBrush brush = s_defaultBrush);
     void addLine( const QLineF& line, QPen pen = s_defaultPen);
     void addContour( std::vector< cv::Point > contour, QPen pen = s_defaultPen, QBrush brush = s_defaultBrush);
     void addContour( std::vector< cv::Point > contour, std::vector<int> idx, QPen pen, QBrush brush);

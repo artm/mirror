@@ -21,12 +21,17 @@ void ScratchGraphics::clear()
     }
 }
 
-void ScratchGraphics::addRect( const cv::Rect& rect, QPen pen, QBrush brush )
+void ScratchGraphics::addRect( const QRectF& rect, QPen pen, QBrush brush )
 {
-    QGraphicsRectItem * item = new QGraphicsRectItem(makeQt(rect));
+    QGraphicsRectItem * item = new QGraphicsRectItem(rect);
     addToGroup( item );
     item->setPen( pen );
     item->setBrush( brush );
+}
+
+void ScratchGraphics::addRect( const cv::Rect& rect, QPen pen, QBrush brush )
+{
+    addRect(makeQt(rect), pen, brush);
 }
 
 void ScratchGraphics::addLine( const QLineF& line, QPen pen)
