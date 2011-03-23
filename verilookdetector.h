@@ -1,6 +1,9 @@
 #ifndef VERILOOKDETECTOR_H
 #define VERILOOKDETECTOR_H
 
+#include <QStringList>
+#include <QDir>
+
 #include "visionfilter.h"
 #include "scratchgraphics.h"
 
@@ -25,13 +28,25 @@ signals:
 
 public slots:
     void setDetectEyes(bool on);
+    void loadNextFace();
 
 protected:
     void filter(const cv::Mat& frame);
 
+    class DbLoader {
+    public:
+        DbLoader();
+        QString next();
+    protected:
+        QDir m_dir;
+        QStringList m_fileList;
+    };
+
 
     cv::Mat m_grey, m_normalized;
     ScratchGraphics * m_scratch;
+    QTimer * m_loadTimer;
+    DbLoader m_dbLoader;
 
 private:
     VerilookDetectorPrivate * m_private;

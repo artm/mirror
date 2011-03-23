@@ -70,7 +70,7 @@ void MirrorWindow::setCapture(bool on)
     if (on) {
         if (!m_camera)
             m_camera = new cv::VideoCapture(0);
-        m_metro.start(0);
+        m_metro.start(50);
     } else {
         m_metro.stop();
     }

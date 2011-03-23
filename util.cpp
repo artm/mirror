@@ -3,6 +3,7 @@
 #include <QVector>
 #include <QRgb>
 #include <QtDebug>
+#include <QCoreApplication>
 
 namespace Mirror {
 
@@ -30,6 +31,15 @@ QImage CvMat2QImage(const cv::Mat& cvmat)
         qWarning() << "Image cannot be converted.";
         return QImage();
     }
+}
+
+QString findResourceFile(const QString& relPath)
+{
+    // FIXME this is osx specific.
+    // TODO make it actually search in some defined places.
+    return QCoreApplication::applicationDirPath ()
+            + "/../../../Resources/"
+            + relPath;
 }
 
 }

@@ -12,6 +12,7 @@
 
 #include <QString>
 #include <QList>
+#include <QSharedPointer>
 
 #include <opencv2/core/core.hpp>
 
@@ -34,11 +35,26 @@ public:
     bool detectEyes() const { return m_detectEyes; }
     void setDetectEyes(bool on) { m_detectEyes = on; }
 
+    void addDbFace(const QString& path);
+
 private:
+    struct FaceTemplate {
+        QString m_imgPath, m_tplPath;
+        QByteArray m_data;
+
+        FaceTemplate(const QString& imgPath,
+                     const QString& tplPath,
+                     const QByteArray& data);
+
+    };
+
+    typedef QSharedPointer<FaceTemplate> FaceTemplatePtr;
+
     VerilookDetectorPrivate();
 
     HNLExtractor m_extractor;
     bool m_detectEyes;
+    QList< FaceTemplatePtr > m_templates;
 
     static bool s_gotLicense;
 

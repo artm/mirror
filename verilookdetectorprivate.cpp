@@ -1,6 +1,7 @@
 #include "verilookdetectorprivate.h"
 
 #include <QtDebug>
+#include <QtCore>
 
 namespace Mirror {
 
@@ -34,6 +35,8 @@ VerilookDetectorPrivate::~VerilookDetectorPrivate() {
         NleFree(m_extractor);
         m_extractor = 0;
     }
+
+    m_templates.clear();
 
     if (--s_refcount == 0) {
         releaseLicense();
@@ -144,6 +147,81 @@ void VerilookDetectorPrivate::process(const cv::Mat& frame, QList<Face>& faces)
     }
 
     NFree(vlFaces);
+}
+
+void VerilookDetectorPrivate::addDbFace(const QString& imgPath)
+{
+    QFileInfo fi(imgPath);
+    Q_ASSERT( fi.exists() );
+    QString tplPath = fi.path() + "/" + fi.baseName() + ".tpl";
+    if (QFileInfo(tplPath).exists()) {
+        // load from file
+        QFile tplFile(tplPath);
+        tplFile.open(QFile::ReadOnly);
+        m_templates.push_back(FaceTemplatePtr(new FaceTemplate(imgPath, tplPath, tplFile.readAll())));
+        //qDebug() << "Successfully loaded template for" << imgPath;
+    } else {
+        HNImage image, greyscale;
+        NleDetectionDetails details;
+        HNLTemplate tpl;
+        NleExtractionStatus extrStatus;
+
+        if (isOk(NImageCreateFromFile(imgPath.toLocal8Bit(), NULL, &image))) {
+
+            if (isOk(NImageCreateFromImage(npfGrayscale, 0, image, &greyscale))) {
+                if (isOk(NleExtract(m_extractor, greyscale,
+                             &details, &extrStatus, &tpl))
+                        && (extrStatus == nleesTemplateCreated)) {
+                    // compress
+                    HNLTemplate compTemplate;
+
+                    if (isOk(NleCompressEx(tpl, nletsSmall, &compTemplate))) {
+
+                        // free uncompressed template
+                        NLTemplateFree(tpl);
+
+                        // get the size of the template
+                        NSizeType maxSize;
+                        if (isOk(NLTemplateGetSize(compTemplate, 0, &maxSize))) {
+
+                            // transform to byte array
+                            NSizeType size;
+                            QByteArray bytes(maxSize, 0);
+
+                            if (isOk(NLTemplateSaveToMemory(compTemplate,
+                                                            bytes.data_ptr(), maxSize,
+                                                            0, &size))) {
+                                bytes.truncate(size);
+                                // save compressed template to file
+                                QFile tplFile(tplPath);
+                                tplFile.open(QFile::WriteOnly);
+                                tplFile.write( bytes );
+
+                                m_templates.push_back( FaceTemplatePtr(new FaceTemplate(imgPath, tplPath, bytes)) );
+                                //qDebug() << "Successfully created template for" << imgPath;
+                            }
+                        }
+                    }
+
+                } else {
+                    if (tpl != 0)
+                        qWarning("Leaking a templ that allegedly wasn't loaded");
+                }
+                NImageFree(greyscale);
+            }
+            NImageFree(image);
+        }
+    }
+
+}
+
+
+VerilookDetectorPrivate::FaceTemplate::FaceTemplate(
+    const QString& imgPath,
+    const QString& tplPath,
+    const QByteArray& data)
+    : m_imgPath(imgPath), m_tplPath(tplPath), m_data(data)
+{
 }
 
 } // namespace Mirror

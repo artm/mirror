@@ -2,12 +2,13 @@
 #include "ui_mirrorwindow.h"
 #include "face.h"
 #include "verilookdetectorprivate.h"
+#include "util.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <QtDebug>
-#include <QPushButton>
+#include <QtGui>
 
 namespace Mirror {
 
@@ -20,6 +21,10 @@ VerilookDetector::VerilookDetector(Mirror::CompositeView * canvas, QObject *pare
 
     appendVideoSlot("greyscale", &m_grey);
     appendVideoSlot("stretched contrast", &m_normalized);
+
+    m_loadTimer = new QTimer(this);
+    connect(m_loadTimer,SIGNAL(timeout()), SLOT(loadNextFace()));
+    m_loadTimer->start(0);
 }
 
 VerilookDetector::~VerilookDetector()
@@ -30,6 +35,34 @@ VerilookDetector::~VerilookDetector()
     }
 }
 
+VerilookDetector::DbLoader::DbLoader()
+    : m_dir(findResourceFile("faces_db/faces"))
+{
+    QStringList nameFilter;
+    nameFilter << "*.jpg";
+    m_fileList = m_dir.entryList(nameFilter,QDir::Files,QDir::Name);
+}
+
+QString VerilookDetector::DbLoader::next()
+{
+    if (m_fileList.size()) {
+        QString res = m_fileList.front();
+        m_fileList.pop_front();
+        return m_dir.filePath(res);
+    } else
+        return QString::null;
+}
+
+
+void VerilookDetector::loadNextFace()
+{
+    QString fname = m_dbLoader.next();
+    if (fname.isNull()) {
+        m_loadTimer->stop();
+    } else {
+        m_private->addDbFace(fname);
+    }
+}
 
 void VerilookDetector::configureGUI(Ui::MirrorWindow * ui)
 {

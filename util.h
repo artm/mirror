@@ -7,6 +7,7 @@
 namespace Mirror {
 
 QImage CvMat2QImage(const cv::Mat& cvmat);
+QString findResourceFile(const QString& relPath);
 
 } // namespace Mirror
 

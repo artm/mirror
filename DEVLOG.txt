@@ -173,5 +173,11 @@ So...
   - ok, license obtain/release works. let's see if we can detect faces in
     video coming from opencv...
     - yes. now the eyes (but don't need eyes always, have a boolean flag).
+    - eyes work as well.
+  - now to recognition: I need some sort of coroutines that do the following:
+    - loading the database in the background
+    - matching the the face against the database
+  - don't have to be full-fledged coroutines, just idle handler with state
+    - actually, loading the database is sucking slow, not sure why is that...
 
 - And when actually calling some verilook API it can't link.

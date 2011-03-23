@@ -1,10 +1,9 @@
 #include "facetracker.h"
 #include "scratchgraphics.h"
 #include "ui_mirrorwindow.h"
+#include "util.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
-
-#include <QCoreApplication>
 
 namespace Mirror {
 
@@ -17,10 +16,15 @@ FaceTracker::FaceTracker(Mirror::CompositeView * canvas, QObject *parent)
     m_faceGfx = new Mirror::ScratchGraphics();
     scene->addItem( m_faceGfx );
 
-    QString prefix = QCoreApplication::applicationDirPath () + "/../../../Resources/";
-    m_faceDetector.load((prefix + "lbpcascades/lbpcascade_frontalface.xml").toStdString());
-    m_lEyeDetector.load((prefix + "haarcascades/haarcascade_mcs_lefteye.xml").toStdString());
-    m_rEyeDetector.load((prefix + "haarcascades/haarcascade_mcs_righteye.xml").toStdString());
+    m_faceDetector.load(
+                findResourceFile("lbpcascades/lbpcascade_frontalface.xml")
+                .toStdString());
+    m_lEyeDetector.load(
+                findResourceFile("haarcascades/haarcascade_mcs_lefteye.xml")
+                .toStdString());
+    m_rEyeDetector.load(
+                findResourceFile("haarcascades/haarcascade_mcs_righteye.xml")
+                .toStdString());
 
     appendVideoSlot("greyscale", &m_grey);
     appendVideoSlot("downsampled", &m_scaled);
