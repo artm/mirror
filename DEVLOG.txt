@@ -178,6 +178,27 @@ So...
     - loading the database in the background
     - matching the the face against the database
   - don't have to be full-fledged coroutines, just idle handler with state
-    - actually, loading the database is sucking slow, not sure why is that...
+    - actually, loading the database is slow, not sure why is that...
 
-- And when actually calling some verilook API it can't link.
+face recognition:
+[ ] switch on and offable recognition
+    [x] logic for locking/disabling eye detection ?
+    [x] see how slow it is (making the template)
+        it is slow indeed...
+    [x] an idle handler for recognition: if there is a template to match
+        match certain number of templates each idle
+
+[ ] progress bars:
+    [ ] database loading
+    [ ] matching
+[ ] best match display: show the best match so far as a small image somewhere
+
+
+From program log:
+> "Matching template created in 397 ms"
+> "Reached the end of the database in 64 ms (8093.75 face/sec)"
+
+have to move matching to a separate thread.
+
+before matching have to extract a template and that requires an extractor
+object, have to share it.

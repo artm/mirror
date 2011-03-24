@@ -1,4 +1,6 @@
 #include "verilookdetectorprivate.h"
+#include "verilookmatchingthread.h"
+#include "mutextrylocker.h"
 
 #include <QtDebug>
 #include <QtCore>
@@ -21,22 +23,27 @@ VerilookDetectorPrivate * VerilookDetectorPrivate::make()
 }
 
 VerilookDetectorPrivate::VerilookDetectorPrivate()
-    : m_detectEyes( true )
+    : m_detectEyes( true ), m_recognize(false)
+
 {
     if (! isOk(NleCreate(&m_extractor),
                "No verilook extractor created",
                "Verilook extractor created") ) {
         m_extractor = 0;
     }
+    m_extractorMutex = new QMutex();
+
+    m_matchingThread = new VerilookMatchingThread(
+                m_extractor, m_extractorMutex, this);
+
 }
 
 VerilookDetectorPrivate::~VerilookDetectorPrivate() {
     if (m_extractor) {
+        QMutexLocker locker(m_extractorMutex);
         NleFree(m_extractor);
         m_extractor = 0;
     }
-
-    m_templates.clear();
 
     if (--s_refcount == 0) {
         releaseLicense();
@@ -55,9 +62,10 @@ bool VerilookDetectorPrivate::obtainLicense()
 
 
         if (!available) {
-            qWarning("License for %s not available.", s_licenseList);
+            qWarning() << QString("License for %1 not available.")
+                          .arg(s_licenseList);
         } else {
-            qDebug("License successfully obtained.");
+            qDebug() << "License successfully obtained.";
             s_gotLicense = true;
         }
     }
@@ -98,7 +106,7 @@ bool VerilookDetectorPrivate::isOk(NResult result,
                    .arg(result)
                    .arg(errorString(result))
                    .arg( !errorSuffix.isEmpty()
-                        ? (", " + errorSuffix + ".") : "");
+                        ? (" " + errorSuffix + ".") : "");
         return false;
     } else {
         if (!successMessage.isEmpty())
@@ -110,6 +118,11 @@ bool VerilookDetectorPrivate::isOk(NResult result,
 
 void VerilookDetectorPrivate::process(const cv::Mat& frame, QList<Face>& faces)
 {
+    MutexTryLocker locker(m_extractorMutex);
+
+    if (!locker)
+        return;
+
     HNImage img;
     if ( !isOk( NImageCreateWrapper(
                    npfGrayscale,
@@ -121,15 +134,19 @@ void VerilookDetectorPrivate::process(const cv::Mat& frame, QList<Face>& faces)
     /* detect faces */
     int faceCount = 0;
     NleFace * vlFaces;
-
     NleDetectFaces( m_extractor, img, &faceCount, &vlFaces);
+
+
+    int maxArea = 0;
+    NleDetectionDetails maxDetails;
+
     // convert to mirror faces
     for(int i = 0; i<faceCount; ++i) {
         Face face( QRectF(vlFaces[i].Rectangle.X,
                           vlFaces[i].Rectangle.Y,
                           vlFaces[i].Rectangle.Width,
                           vlFaces[i].Rectangle.Height));
-        if (m_detectEyes) {
+        if (m_detectEyes || m_recognize) {
             NleDetectionDetails vlDetails;
             if ( isOk(NleDetectFacialFeatures(m_extractor, img,
                                               &vlFaces[i],
@@ -139,6 +156,13 @@ void VerilookDetectorPrivate::process(const cv::Mat& frame, QList<Face>& faces)
                                          vlDetails.Eyes.First.Y),
                                  QPointF(vlDetails.Eyes.Second.X,
                                          vlDetails.Eyes.Second.Y));
+                    int area =
+                            vlFaces[i].Rectangle.Width *
+                            vlFaces[i].Rectangle.Height;
+                    if (area > maxArea) {
+                        maxArea = area;
+                        maxDetails = vlDetails;
+                    }
                 }
             }
         }
@@ -146,82 +170,26 @@ void VerilookDetectorPrivate::process(const cv::Mat& frame, QList<Face>& faces)
         faces.push_back( face );
     }
 
+    if (maxArea > 0
+            && m_matchingThread
+            && m_recognize
+            && !m_matchingThread->isRunning()) {
+        // pass the largest face to the recognizer
+        m_matchingThread->setupRecognition( img, maxDetails );
+        m_matchingThread->start();
+    }
+
     NFree(vlFaces);
 }
 
 void VerilookDetectorPrivate::addDbFace(const QString& imgPath)
 {
-    QFileInfo fi(imgPath);
-    Q_ASSERT( fi.exists() );
-    QString tplPath = fi.path() + "/" + fi.baseName() + ".tpl";
-    if (QFileInfo(tplPath).exists()) {
-        // load from file
-        QFile tplFile(tplPath);
-        tplFile.open(QFile::ReadOnly);
-        m_templates.push_back(FaceTemplatePtr(new FaceTemplate(imgPath, tplPath, tplFile.readAll())));
-        //qDebug() << "Successfully loaded template for" << imgPath;
-    } else {
-        HNImage image, greyscale;
-        NleDetectionDetails details;
-        HNLTemplate tpl;
-        NleExtractionStatus extrStatus;
-
-        if (isOk(NImageCreateFromFile(imgPath.toLocal8Bit(), NULL, &image))) {
-
-            if (isOk(NImageCreateFromImage(npfGrayscale, 0, image, &greyscale))) {
-                if (isOk(NleExtract(m_extractor, greyscale,
-                             &details, &extrStatus, &tpl))
-                        && (extrStatus == nleesTemplateCreated)) {
-                    // compress
-                    HNLTemplate compTemplate;
-
-                    if (isOk(NleCompressEx(tpl, nletsSmall, &compTemplate))) {
-
-                        // free uncompressed template
-                        NLTemplateFree(tpl);
-
-                        // get the size of the template
-                        NSizeType maxSize;
-                        if (isOk(NLTemplateGetSize(compTemplate, 0, &maxSize))) {
-
-                            // transform to byte array
-                            NSizeType size;
-                            QByteArray bytes(maxSize, 0);
-
-                            if (isOk(NLTemplateSaveToMemory(compTemplate,
-                                                            bytes.data_ptr(), maxSize,
-                                                            0, &size))) {
-                                bytes.truncate(size);
-                                // save compressed template to file
-                                QFile tplFile(tplPath);
-                                tplFile.open(QFile::WriteOnly);
-                                tplFile.write( bytes );
-
-                                m_templates.push_back( FaceTemplatePtr(new FaceTemplate(imgPath, tplPath, bytes)) );
-                                //qDebug() << "Successfully created template for" << imgPath;
-                            }
-                        }
-                    }
-
-                } else {
-                    if (tpl != 0)
-                        qWarning("Leaking a templ that allegedly wasn't loaded");
-                }
-                NImageFree(greyscale);
-            }
-            NImageFree(image);
-        }
+    if (!m_matchingThread) {
+        qCritical() << "No matching thread available to load face...";
+        return;
     }
-
+    m_matchingThread->addDbFace(imgPath);
 }
 
-
-VerilookDetectorPrivate::FaceTemplate::FaceTemplate(
-    const QString& imgPath,
-    const QString& tplPath,
-    const QByteArray& data)
-    : m_imgPath(imgPath), m_tplPath(tplPath), m_data(data)
-{
-}
 
 } // namespace Mirror

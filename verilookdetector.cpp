@@ -64,18 +64,44 @@ void VerilookDetector::loadNextFace()
     }
 }
 
+bool VerilookDetector::recognize() const
+{
+    return m_private->recognize();
+}
+
+void VerilookDetector::setRecognize(bool on)
+{
+    if (on) {
+        m_detectEyesSaved = m_eyesButton->isChecked();
+    }
+    m_eyesButton->setChecked( on ? true : m_detectEyesSaved );
+    m_private->setRecognize(true);
+}
+
 void VerilookDetector::configureGUI(Ui::MirrorWindow * ui)
 {
     /* Add controls and connect their signals to our slots and v.v.*/
     QFormLayout * layout = static_cast<QFormLayout *>
             (ui->mirrorDockContents->layout());
 
-    QPushButton * eyes = new QPushButton("Eyes");
-    eyes->setCheckable(true);
-    eyes->setChecked(detectEyes());
-    eyes->setFlat(true);
-    layout->addRow(eyes);
-    connect(eyes, SIGNAL(toggled(bool)), SLOT(setDetectEyes(bool)));
+    QWidget * buttons = new QWidget();
+    buttons->setLayout(new QHBoxLayout());
+
+    m_eyesButton = new QPushButton("Eyes");
+    m_eyesButton->setFlat(true);
+    m_eyesButton->setCheckable(true);
+    m_eyesButton->setChecked(detectEyes());
+    connect(m_eyesButton, SIGNAL(toggled(bool)), SLOT(setDetectEyes(bool)));
+    buttons->layout()->addWidget(m_eyesButton);
+
+    QPushButton * recogButton = new QPushButton("Recognize");
+    recogButton->setCheckable(true);
+    recogButton->setFlat(true);
+    connect(recogButton, SIGNAL(toggled(bool)), SLOT(setRecognize(bool)));
+    connect(recogButton, SIGNAL(toggled(bool)), m_eyesButton, SLOT(setDisabled(bool)));
+    buttons->layout()->addWidget(recogButton);
+
+    layout->addRow(buttons);
 }
 
 void VerilookDetector::filter(const cv::Mat& frame)

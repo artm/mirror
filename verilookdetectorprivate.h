@@ -1,29 +1,34 @@
 #ifndef VERILOOKDETECTORPRIVATE_H
 #define VERILOOKDETECTORPRIVATE_H
 
+#include "face.h"
+
 /* this should only be included by the verilookdetector.cpp,
    so we may include verilook headers here ... */
 
 #include <NCore.h>
-#include <NImages.h>
 #include <NLExtractor.h>
-#include <NMatcher.h>
 #include <NLicensing.h>
 
+#include <QObject>
 #include <QString>
 #include <QList>
 #include <QSharedPointer>
+#include <QTimer>
+#include <QTime>
+#include <QMutex>
 
 #include <opencv2/core/core.hpp>
 
-#include "face.h"
-
 namespace Mirror {
 
-class VerilookDetectorPrivate {
+class VerilookMatchingThread;
+
+class VerilookDetectorPrivate : public QObject {
+    Q_OBJECT
 public:
     static VerilookDetectorPrivate * make();
-    ~VerilookDetectorPrivate();
+    virtual ~VerilookDetectorPrivate();
     static bool obtainLicense();
     static void releaseLicense();
     static QString errorString(NResult result);
@@ -34,27 +39,22 @@ public:
 
     bool detectEyes() const { return m_detectEyes; }
     void setDetectEyes(bool on) { m_detectEyes = on; }
+    bool recognize() const { return m_recognize; }
+    void setRecognize(bool on) { m_recognize = on; }
 
     void addDbFace(const QString& path);
 
+public slots:
+
 private:
-    struct FaceTemplate {
-        QString m_imgPath, m_tplPath;
-        QByteArray m_data;
-
-        FaceTemplate(const QString& imgPath,
-                     const QString& tplPath,
-                     const QByteArray& data);
-
-    };
-
-    typedef QSharedPointer<FaceTemplate> FaceTemplatePtr;
-
     VerilookDetectorPrivate();
 
+    QMutex * m_extractorMutex;
     HNLExtractor m_extractor;
-    bool m_detectEyes;
-    QList< FaceTemplatePtr > m_templates;
+
+    bool m_detectEyes, m_recognize;
+
+    VerilookMatchingThread * m_matchingThread;
 
     static bool s_gotLicense;
 

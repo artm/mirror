@@ -7,6 +7,8 @@
 #include "visionfilter.h"
 #include "scratchgraphics.h"
 
+class QPushButton;
+
 namespace cv { class Mat; }
 
 namespace Mirror {
@@ -23,11 +25,13 @@ public:
     void configureGUI(Ui::MirrorWindow * ui);
 
     bool detectEyes() const;
+    bool recognize() const;
 
 signals:
 
 public slots:
     void setDetectEyes(bool on);
+    void setRecognize(bool on);
     void loadNextFace();
 
 protected:
@@ -47,6 +51,9 @@ protected:
     ScratchGraphics * m_scratch;
     QTimer * m_loadTimer;
     DbLoader m_dbLoader;
+
+    QPushButton * m_eyesButton;
+    bool m_detectEyesSaved;
 
 private:
     VerilookDetectorPrivate * m_private;

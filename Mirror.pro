@@ -20,7 +20,9 @@ SOURCES += main.cpp\
     facetracker.cpp \
     verilookdetector.cpp \
     face.cpp \
-    verilookdetectorprivate.cpp
+    verilookdetectorprivate.cpp \
+    verilookmatchingthread.cpp \
+    mutextrylocker.cpp
 
 HEADERS  += mirrorwindow.h \
     compositeview.h \
@@ -31,7 +33,9 @@ HEADERS  += mirrorwindow.h \
     facetracker.h \
     verilookdetector.h \
     face.h \
-    verilookdetectorprivate.h
+    verilookdetectorprivate.h \
+    verilookmatchingthread.h \
+    mutextrylocker.h
 
 FORMS    += mirrorwindow.ui
 
