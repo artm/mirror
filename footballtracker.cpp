@@ -15,7 +15,9 @@
 namespace Mirror {
 
 FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *parent )
-    : Mirror::VisionFilter(canvas, parent), m_foundField(false)
+    : Mirror::VisionFilter(canvas, parent)
+    , m_foundField(false)
+    , m_dragCornerIdx(-1)
 {
     QString prefix = QCoreApplication::applicationDirPath () + "/../../../Resources/";
     m_field = cv::imread((prefix+"field-sample.png").toStdString(), 3);
@@ -43,10 +45,10 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
     appendVideoSlot("see through", &m_seeThrough);
 
     QGraphicsScene *  scene = canvas->scene();
-    m_fieldOverlay = new Mirror::ScratchGraphics();
-    scene->addItem( m_fieldOverlay );
-    m_playersOverlay = new Mirror::ScratchGraphics();
-    scene->addItem( m_playersOverlay );
+    scene->addItem( m_fieldOverlay = new ScratchGraphics );
+    scene->addItem( m_playersOverlay = new ScratchGraphics );
+    m_fieldQuadGfx = new QGraphicsPathItem(0,scene);
+    m_fieldQuadGfx->setPen(QPen(Qt::red));
 }
 
 void FootballTracker::filter(const cv::Mat& frame)
@@ -70,6 +72,7 @@ void FootballTracker::filter(const cv::Mat& frame)
         cv::findContours( copy, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
         m_fieldOverlay->clear();
+
         int longest = 0;
         for(unsigned i = 1; i<contours.size(); ++i) {
             if (contours[i].size() > contours[longest].size())
@@ -85,6 +88,16 @@ void FootballTracker::filter(const cv::Mat& frame)
         m_fieldMask = cv::Mat( m_fieldnessBin, m_fieldROI ).clone();
         m_fieldOverlay->addRect(m_fieldROI, m_fieldOverlay->defaultPen(), Qt::NoBrush);
         m_fieldOverlay->addContour( contours[longest], QPen(QColor(255,128,128)), Qt::NoBrush);
+
+        if (m_fieldQuad.size() == 0) {
+            // initialize the field quad...
+            float x0 = m_fieldROI.x, x1 = m_fieldROI.br().x,
+                    y0 = m_fieldROI.y, y1 = m_fieldROI.br().y;
+            m_fieldQuad << QPointF(x0,y0) << QPointF(x1,y0) << QPointF(x1,y1) << QPointF(x0,y1);
+
+        }
+        updateFieldQuadGfx();
+
         m_foundField = true;
     } else {
         // we have ROI and a mask - search for little guys
@@ -148,6 +161,7 @@ void FootballTracker::configureGUI(Ui::MirrorWindow * ui)
     mainWin->loadFile( QCoreApplication::applicationDirPath() + "/../../../Resources/voet1.MP4" );
 
     mainWin->installEventFilter(this);
+    m_canvas->installEventFilter(this);
 
     QSlider * zoomSlider = new QSlider(Qt::Horizontal);
     layout->addRow("Zoom out", zoomSlider);
@@ -157,11 +171,59 @@ void FootballTracker::configureGUI(Ui::MirrorWindow * ui)
     zoomSlider->setValue(100);
     connect(zoomSlider, SIGNAL(valueChanged(int)), m_canvas, SLOT(zoom(int)));
 
+    layout->addRow( "<b>Space</b>", new QLabel(" - relearn background") );
+    layout->addRow( "<b>o</b>", new QLabel("-  overlay on/off") );
 }
 
 bool FootballTracker::eventFilter(QObject * obj, QEvent * event)
 {
-    if (event->type() == QEvent::KeyRelease) {
+    if (obj == m_canvas) {
+
+        QMouseEvent * mevent = dynamic_cast<QMouseEvent*>(event);
+        if (mevent) {
+            mevent->accept();
+
+            QPointF p = m_canvas->mapToScene( mevent->pos() );
+            QPointF dpos = p - m_dragLastPos;
+            m_dragLastPos = p;
+
+            float minD = 1e6;
+            switch (event->type()) {
+            case QEvent::MouseButtonPress:
+                // pick the closest corner of the field quad for dragging
+
+                for(int i=0; i<4; ++i) {
+                    float d = (p - m_fieldQuad[i]).manhattanLength();
+                    qDebug() << "current d is" << d;
+                    if ((d < 75) && (d < minD)) {
+                        minD = d;
+                        m_dragCornerIdx = i;
+                    }
+                    if (m_dragCornerIdx >= 0)
+                        m_canvas->grabMouse();
+                }
+                break;
+            case QEvent::MouseButtonRelease:
+                // stop dragging
+                if (m_dragCornerIdx >= 0)
+                    m_canvas->releaseMouse();
+                m_dragCornerIdx = -1;
+                break;
+            case QEvent::MouseMove:
+                // if dragging - drag
+                if (m_dragCornerIdx >=0) {
+                    m_fieldQuad[m_dragCornerIdx] += dpos;
+                    updateFieldQuadGfx();
+                }
+                break;
+            default:
+                break;
+            }
+
+            return true;
+        }
+
+    } else if (event->type() == QEvent::KeyRelease) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
         switch (keyEvent->key()) {
         case Qt::Key_Space:
@@ -175,5 +237,20 @@ bool FootballTracker::eventFilter(QObject * obj, QEvent * event)
 
     return QObject::eventFilter(obj, event);
 }
+
+void FootballTracker::updateFieldQuadGfx()
+{
+    if (m_fieldQuad.size() != 4)
+        return;
+
+    QPainterPath path(m_fieldQuad[0]);
+    for(int i = 1; i<4; ++i)
+        path.lineTo(m_fieldQuad[i]);
+    path.closeSubpath();
+
+    m_fieldQuadGfx->setPath(path);
+}
+
+
 
 } // namespace Mirror

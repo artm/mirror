@@ -286,9 +286,10 @@ After all the fiddling about with Mirror / OpenCV have to restore the build envi
 Took a while. I've changed the build directory, so had to symlink the Resources into there for football tracker to find
 field "template".
 
-[ ] zoom in/out slider
+[x] zoom in/out slider
     added by the tracker to ... well, somewhere
 [ ] field quad editor
+    added by the tracker - a filter on canvas's mouse events...
 [ ] track in perspective corrected field
 [ ] detect blobs
 [ ] for each blob
