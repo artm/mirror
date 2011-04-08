@@ -3,7 +3,8 @@
 My goal now is to capture video with OpenCV but show it with Qt...
 Capture starts now. No camera selection yet (default camera) - that's for later.
 
-Now: how to display? I should be able to display one of the several stages of the video filters and draw stuff on top. Custom widget seems apropriate.
+Now: how to display? I should be able to display one of the several stages of
+the video filters and draw stuff on top. Custom widget seems apropriate.
 
 Or may be: QGr.View with all them layers like?
 
@@ -85,10 +86,16 @@ football players tracking:
     - rectify / unproject based on 4 points
 
 Extra considerations:
-- cvPyrMeanShiftFiltering is slow but simplifies the image a lot. helps to keep the histograms distinct. when to use it? may be to generate the inital histograms.
-- the furthest background (in the test video) can be problematic, but as long as their uniforms are bright and in contrast with the background it's ok
-- it would be clever to perspective-correct image when scaling down: minimize amount of processing for the foreground and loss of detail for the background.
-    - TODO find which opencv geometric transformation functions does it, there is one that can do both in one go.
+- cvPyrMeanShiftFiltering is slow but simplifies the image a lot. helps to
+  keep the histograms distinct. when to use it? may be to generate the inital
+histograms.
+- the furthest background (in the test video) can be problematic, but as long
+  as their uniforms are bright and in contrast with the background it's ok
+- it would be clever to perspective-correct image when scaling down: minimize
+  amount of processing for the foreground and loss of detail for the
+background.
+    - TODO find which opencv geometric transformation functions does it, there
+      is one that can do both in one go.
 
 Learning the field:
 1. learning field color histogram
@@ -202,3 +209,77 @@ have to move matching to a separate thread.
 
 before matching have to extract a template and that requires an extractor
 object, have to share it.
+
+* * *
+
+New class wizard...
+
+followed http://doc.qt.nokia.com/qtcreator-snapshot/creator-project-wizards.html
+the wizard is in ~/.config/Nokia/qtcreator/templates/wizards/NewMirrorClass/
+
+* * *
+
+opencv
+~~~~~~
+
+on osx
+======
+
+I have built the 2.2.0 version using cmake.
+
+should probably make it build from qt creator (it supports cmake projects)
+
+on windows
+==========
+
+Building OpenCV on windows.
+
+Had really hard time recalling what's my build environment on windows.
+Eventually...:
+
+1. Menu Start > MinGW > MinGW Shell
+2. cd /y/src/Mirror/Shoulders/opencv-build-win
+3. cmake ../OpenCV-2.2.0 -G "MSYS Makefiles"
+4. make
+
+missing videoInput... should I find it somewhere?
+https://github.com/ofTheo/videoInput
+
+copied and renamed the library compiled with DevCpp (didn't bother to
+build my own) to 3rdparty/lib/libvideoInput.a
+
+that seems to have helped.
+
+next it can't build ffmpeg part. looks for built libraries in some place.
+I should have disabled ffmpeg.
+
+that's:
+cmake WITH_FFMPEG=0 ../OpenCV-2.2.0
+
+still very slow everything. Is this because I'm at mac disk from windows?
+indeed that was it.
+
+after having copied the OpenCV-2.2.0 to the Parallels mounted windows disk it
+contained a bunch of files with names starting with "._" and make was breaking
+on them. had to:
+
+find . -name "._*" | xargs rm
+
+This time building OpenCV inside the source directory (since it's copied
+anyway). Will break on videoInput and ffmpeg - will think how to deal with
+that later. 
+
+cp ../videoInput/compiledLib/compiledByDevCpp/videoInputLib.a \
+3rdparty/lib/libvideoInput.a
+
+WITH_FFMPEG=0 doesn't help
+
+* * *
+
+Gave up on opencv on windows for now.
+
+* * *
+
+Continue with football++
+
+After all the filldling about with Mirror / OpenCV have to restore the build environment and build the OpenCV a new.
