@@ -4,6 +4,8 @@
 #include "visionfilter.h"
 #include "scratchgraphics.h"
 
+class QSlider;
+
 namespace Mirror {
 
 class FootballTracker : public VisionFilter
@@ -34,10 +36,13 @@ protected:
     cv::Rect m_fieldROI;
     bool m_foundField;
     QPolygonF m_fieldQuad;
-    ScratchGraphics * m_fieldOverlay, * m_playersOverlay;
+    ScratchGraphics * m_playersOverlay;
     QGraphicsPathItem * m_fieldQuadGfx;
     int m_dragCornerIdx;
     QPointF m_dragLastPos;
+    QSlider * m_zoomSlider;
+
+    static const QSize s_undistortSize;
 };
 
 } // namespace Mirror

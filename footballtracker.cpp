@@ -14,6 +14,8 @@
 
 namespace Mirror {
 
+const QSize FootballTracker::s_undistortSize(1024,1024);
+
 FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *parent )
     : Mirror::VisionFilter(canvas, parent)
     , m_foundField(false)
@@ -40,16 +42,16 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
 
     appendVideoSlot("undistorted", &m_undistorted);
     appendVideoSlot("field mask", &m_fieldMaskUndistorted);
-    appendVideoSlot("fieldness", &m_fieldness);
-    appendVideoSlot("fieldness-thresholded", &m_fieldnessBin);
     appendVideoSlot("see through", &m_seeThrough);
 
 
     QGraphicsScene *  scene = canvas->scene();
-    scene->addItem( m_fieldOverlay = new ScratchGraphics );
     scene->addItem( m_playersOverlay = new ScratchGraphics );
     m_fieldQuadGfx = new QGraphicsPathItem(0,scene);
     m_fieldQuadGfx->setPen(QPen(Qt::red));
+
+    m_canvas->setAttribute(Qt::WA_AcceptTouchEvents, true); //set this to receive touch events
+    m_canvas->grabGesture(Qt::PinchGesture);
 }
 
 void FootballTracker::filter(const cv::Mat& frame)
@@ -72,8 +74,6 @@ void FootballTracker::filter(const cv::Mat& frame)
         cv::Mat copy = m_fieldnessBin.clone();
         cv::findContours( copy, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
-        m_fieldOverlay->clear();
-
         int longest = 0;
         for(unsigned i = 1; i<contours.size(); ++i) {
             if (contours[i].size() > contours[longest].size())
@@ -87,8 +87,6 @@ void FootballTracker::filter(const cv::Mat& frame)
         int longestLen[] = { contours[longest].size() };
         cv::fillPoly( m_fieldnessBin, longestPts, longestLen, 1, 255 );
         m_fieldMask = m_fieldnessBin.clone();
-        m_fieldOverlay->addRect(m_fieldROI, m_fieldOverlay->defaultPen(), Qt::NoBrush);
-        m_fieldOverlay->addContour( contours[longest], QPen(QColor(255,128,128)), Qt::NoBrush);
 
         if (m_fieldQuad.size() == 0) {
             // initialize the field quad...
@@ -103,7 +101,7 @@ void FootballTracker::filter(const cv::Mat& frame)
     } else {
         // undistort...
         if (m_fieldQuad.size() == 4) {
-            cv::warpPerspective( frame, m_undistorted, m_perspective, cv::Size2i(640,480));
+            cv::warpPerspective( frame, m_undistorted, m_perspective, cv::Size2i(s_undistortSize.width(), s_undistortSize.height()));
 
             cv::cvtColor( m_undistorted, m_hsv, CV_BGR2HSV );
             // search for little guys in the whole thing...
@@ -167,12 +165,10 @@ void FootballTracker::filter(const cv::Mat& frame)
 
 void FootballTracker::toggleOverlay()
 {
-    if (m_fieldOverlay->isVisible()) {
-        m_fieldOverlay->hide();
+    if (m_playersOverlay->isVisible()) {
         m_playersOverlay->hide();
         m_fieldQuadGfx->hide();
     } else {
-        m_fieldOverlay->show();
         m_playersOverlay->show();
         m_fieldQuadGfx->show();
     }
@@ -195,13 +191,13 @@ void FootballTracker::configureGUI(Ui::MirrorWindow * ui)
     mainWin->installEventFilter(this);
     m_canvas->installEventFilter(this);
 
-    QSlider * zoomSlider = new QSlider(Qt::Horizontal);
-    layout->addRow("Zoom out", zoomSlider);
-    zoomSlider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_zoomSlider = new QSlider(Qt::Horizontal);
+    layout->addRow("Zoom out", m_zoomSlider);
+    m_zoomSlider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    zoomSlider->setRange(50,100);
-    zoomSlider->setValue(100);
-    connect(zoomSlider, SIGNAL(valueChanged(int)), m_canvas, SLOT(zoom(int)));
+    m_zoomSlider->setRange(50,100);
+    m_zoomSlider->setValue(100);
+    connect(m_zoomSlider, SIGNAL(valueChanged(int)), m_canvas, SLOT(zoom(int)));
 
     layout->addRow( "<b>Space</b>", new QLabel(" - relearn background") );
     layout->addRow( "<b>o</b>", new QLabel("-  overlay on/off") );
@@ -252,6 +248,12 @@ bool FootballTracker::eventFilter(QObject * obj, QEvent * event)
             }
 
             return true;
+        } else if (event->type() == QEvent::Gesture) {
+            QGestureEvent * gevent = dynamic_cast<QGestureEvent *>(event);
+            if (QPinchGesture *pinch = dynamic_cast<QPinchGesture *>(gevent->gesture(Qt::PinchGesture))) {
+                //qDebug() << pinch->scaleFactor();
+                m_zoomSlider->setValue( pinch->scaleFactor() * m_zoomSlider->value() );
+            }
         }
 
     } else if (event->type() == QEvent::KeyRelease) {
@@ -289,12 +291,13 @@ void FootballTracker::updateFieldQuadGfx()
     };
     cv::Point2f dst[4] = {
         cv::Point2f(0,0),
-        cv::Point2f(640,0),
-        cv::Point2f(640,480),
-        cv::Point2f(0,480),
+        cv::Point2f(s_undistortSize.width(),0),
+        cv::Point2f(s_undistortSize.width(),s_undistortSize.height()),
+        cv::Point2f(0,s_undistortSize.height()),
     };
     m_perspective = cv::getPerspectiveTransform( src,  dst );
-    cv::warpPerspective( m_fieldMask, m_fieldMaskUndistorted, m_perspective, cv::Size2i(640,480));
+    cv::warpPerspective( m_fieldMask, m_fieldMaskUndistorted, m_perspective,
+                        cv::Size2i(s_undistortSize.width(),s_undistortSize.height()));
 }
 
 
