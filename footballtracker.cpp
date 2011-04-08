@@ -38,13 +38,12 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
              false // don't accumulate
              );
 
-    appendVideoSlot("hsv",&m_hsv);
+    appendVideoSlot("undistorted", &m_undistorted);
+    appendVideoSlot("field mask", &m_fieldMaskUndistorted);
     appendVideoSlot("fieldness", &m_fieldness);
     appendVideoSlot("fieldness-thresholded", &m_fieldnessBin);
-    appendVideoSlot("field", &m_field);
     appendVideoSlot("see through", &m_seeThrough);
 
-    appendVideoSlot("undistorted", &m_undistorted);
 
     QGraphicsScene *  scene = canvas->scene();
     scene->addItem( m_fieldOverlay = new ScratchGraphics );
@@ -87,7 +86,7 @@ void FootballTracker::filter(const cv::Mat& frame)
         const cv::Point * longestPts[] = { &(contours[longest][0]) };
         int longestLen[] = { contours[longest].size() };
         cv::fillPoly( m_fieldnessBin, longestPts, longestLen, 1, 255 );
-        m_fieldMask = cv::Mat( m_fieldnessBin, m_fieldROI ).clone();
+        m_fieldMask = m_fieldnessBin.clone();
         m_fieldOverlay->addRect(m_fieldROI, m_fieldOverlay->defaultPen(), Qt::NoBrush);
         m_fieldOverlay->addContour( contours[longest], QPen(QColor(255,128,128)), Qt::NoBrush);
 
@@ -104,42 +103,64 @@ void FootballTracker::filter(const cv::Mat& frame)
     } else {
         // undistort...
         if (m_fieldQuad.size() == 4) {
-            //m_undistorted.create( 640, 480, CV_8SC3 );
-            cv::warpPerspective( frame, m_undistorted, m_perspective, cv::Size2i(640,480),
-                                 cv::INTER_CUBIC );
+            cv::warpPerspective( frame, m_undistorted, m_perspective, cv::Size2i(640,480));
+
+            cv::cvtColor( m_undistorted, m_hsv, CV_BGR2HSV );
+            // search for little guys in the whole thing...
+            cv::calcBackProject( &m_hsv, 1, channels, m_fieldHist, m_fieldness, ranges );
+            cv::threshold( m_fieldness, m_fieldnessBin, 200, 255, cv::THRESH_BINARY_INV);
+            cv::multiply( m_fieldnessBin, m_fieldMaskUndistorted, m_fieldnessBin );
+
+            cv::Mat kernel = (cv::Mat_<unsigned char>(3,3) << 0, 255, 0, 255, 255, 255, 0, 255, 0);
+            cv::morphologyEx( m_fieldnessBin, m_fieldnessBin, cv::MORPH_OPEN, kernel, cv::Point(-1,-1), 2);
+            kernel = (cv::Mat_<unsigned char>(3,3) << 0, 255, 0, 0, 255, 0, 0, 0, 0);
+            cv::morphologyEx( m_fieldnessBin, m_fieldnessBin, cv::MORPH_DILATE, kernel, cv::Point(-1,-1), 5);
+
+            // see through blob visualization...
+            m_seeThrough = cv::Mat( m_undistorted.rows, m_undistorted.cols, CV_8UC3, 0);
+            m_undistorted.copyTo(m_seeThrough, m_fieldnessBin);
+
+
+            std::vector< std::vector< cv::Point > > contours;
+            cv::findContours( m_fieldnessBin, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+            m_playersOverlay->clear();
+            for(unsigned i = 1; i<contours.size(); ++i) {
+                m_playersOverlay->addContour( contours[i], QPen(QColor(128,128,255)), QBrush(QColor(128,128,255,100)) );
+            }
+
+        } else {
+            // we have ROI and a mask - search for little guys
+            m_seeThrough = cv::Mat( frame.rows, frame.cols, CV_8UC3, 0);
+            cv::Mat frameFrag(frame, m_fieldROI),
+                    hsvFrag(m_hsv, m_fieldROI),
+                    fieldnessFrag(m_fieldness, m_fieldROI),
+                    fieldnessBinFrag(m_fieldnessBin, m_fieldROI),
+                    seeThroughFrag(m_seeThrough, m_fieldROI);
+
+            cv::calcBackProject( &hsvFrag, 1, channels, m_fieldHist, fieldnessFrag, ranges );
+            cv::threshold( fieldnessFrag, fieldnessBinFrag, 200, 255, cv::THRESH_BINARY_INV);
+            cv::multiply( fieldnessBinFrag, m_fieldMask, fieldnessBinFrag );
+
+            cv::Mat kernel = (cv::Mat_<unsigned char>(3,3) << 0, 255, 0, 255, 255, 255, 0, 255, 0);
+            cv::morphologyEx( fieldnessBinFrag, fieldnessBinFrag, cv::MORPH_OPEN, kernel, cv::Point(-1,-1), 2);
+
+            kernel = (cv::Mat_<unsigned char>(3,3) << 0, 255, 0, 0, 255, 0, 0, 0, 0);
+            cv::morphologyEx( fieldnessBinFrag, fieldnessBinFrag, cv::MORPH_DILATE, kernel, cv::Point(-1,-1), 5);
+
+            // why doesn't copying ROI versions work???
+            // frameFrag.copyTo(seeThroughFrag, fieldnessBinFrag);
+            frame.copyTo(m_seeThrough, m_fieldnessBin);
+
+            // find blob contours
+            std::vector< std::vector< cv::Point > > contours;
+            cv::findContours( m_fieldnessBin, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+            m_playersOverlay->clear();
+            for(unsigned i = 1; i<contours.size(); ++i) {
+                m_playersOverlay->addContour( contours[i], QPen(QColor(128,128,255)), QBrush(QColor(128,128,255,100)) );
+            }
         }
-
-        // we have ROI and a mask - search for little guys
-        m_seeThrough = cv::Mat( frame.rows, frame.cols, CV_8UC3, 0);
-        cv::Mat frameFrag(frame, m_fieldROI),
-                hsvFrag(m_hsv, m_fieldROI),
-                fieldnessFrag(m_fieldness, m_fieldROI),
-                fieldnessBinFrag(m_fieldnessBin, m_fieldROI),
-                seeThroughFrag(m_seeThrough, m_fieldROI);
-
-        cv::calcBackProject( &hsvFrag, 1, channels, m_fieldHist, fieldnessFrag, ranges );
-        cv::threshold( fieldnessFrag, fieldnessBinFrag, 200, 255, cv::THRESH_BINARY_INV);
-        cv::multiply( fieldnessBinFrag, m_fieldMask, fieldnessBinFrag );
-
-        cv::Mat kernel = (cv::Mat_<unsigned char>(3,3) << 0, 255, 0, 255, 255, 255, 0, 255, 0);
-        cv::morphologyEx( fieldnessBinFrag, fieldnessBinFrag, cv::MORPH_OPEN, kernel, cv::Point(-1,-1), 2);
-
-        kernel = (cv::Mat_<unsigned char>(3,3) << 0, 255, 0, 0, 255, 0, 0, 0, 0);
-        cv::morphologyEx( fieldnessBinFrag, fieldnessBinFrag, cv::MORPH_DILATE, kernel, cv::Point(-1,-1), 5);
-
-        // why doesn't copying ROI versions work???
-        // frameFrag.copyTo(seeThroughFrag, fieldnessBinFrag);
-        frame.copyTo(m_seeThrough, m_fieldnessBin);
-
-        // find blob contours
-        std::vector< std::vector< cv::Point > > contours;
-        cv::findContours( m_fieldnessBin, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-
-        m_playersOverlay->clear();
-        for(unsigned i = 1; i<contours.size(); ++i) {
-            m_playersOverlay->addContour( contours[i], QPen(QColor(128,128,255)), QBrush(QColor(128,128,255,100)) );
-        }
-
     }
 
 }
@@ -205,7 +226,6 @@ bool FootballTracker::eventFilter(QObject * obj, QEvent * event)
 
                 for(int i=0; i<4; ++i) {
                     float d = (p - m_fieldQuad[i]).manhattanLength();
-                    qDebug() << "current d is" << d;
                     if ((d < 75) && (d < minD)) {
                         minD = d;
                         m_dragCornerIdx = i;
@@ -274,6 +294,7 @@ void FootballTracker::updateFieldQuadGfx()
         cv::Point2f(0,480),
     };
     m_perspective = cv::getPerspectiveTransform( src,  dst );
+    cv::warpPerspective( m_fieldMask, m_fieldMaskUndistorted, m_perspective, cv::Size2i(640,480));
 }
 
 

@@ -27,7 +27,7 @@ protected:
     void updateFieldQuadGfx();
 
     cv::Mat m_hsv, m_field, m_fieldness, m_fieldnessBin, m_fieldMask, m_seeThrough;
-    cv::Mat m_undistorted;
+    cv::Mat m_undistorted, m_fieldMaskUndistorted;
     cv::Mat m_perspective;
 
     cv::MatND m_fieldHist;

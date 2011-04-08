@@ -290,7 +290,7 @@ field "template".
     added by the tracker to ... well, somewhere
 [x] field quad editor
     added by the tracker - a filter on canvas's mouse events...
-[ ] new processing phase: perspective corrected
+[x] new processing phase: perspective corrected
 [ ] track in perspective corrected field
 [ ] detect blobs
 [ ] for each blob
@@ -298,3 +298,4 @@ field "template".
     [ ] find area
     [ ] calc histogram of may be 5 main colors
     [ ] be ready to send the list of blobs in whatever format is expected from us
+[ ] adjust canvas geometry to current image
