@@ -125,6 +125,16 @@ void FootballTracker::filter(const cv::Mat& frame)
             m_playersOverlay->clear();
             for(unsigned i = 1; i<contours.size(); ++i) {
                 m_playersOverlay->addContour( contours[i], QPen(QColor(128,128,255)), QBrush(QColor(128,128,255,100)) );
+
+                QPointF coord(contours[i][0].x, contours[i][0].y);
+                foreach(cv::Point p, contours[i]) {
+                    if (p.y > coord.y())
+                        coord = QPointF( p.x, p.y );
+                }
+
+                QString sCoord = QString("%1,%2").arg(coord.x()/m_fieldnessBin.rows).arg(coord.y()/m_fieldnessBin.cols);
+                QGraphicsTextItem * text = new QGraphicsTextItem(sCoord, m_playersOverlay);
+                text->setPos(coord);
             }
 
         } else {
@@ -299,7 +309,5 @@ void FootballTracker::updateFieldQuadGfx()
     cv::warpPerspective( m_fieldMask, m_fieldMaskUndistorted, m_perspective,
                         cv::Size2i(s_undistortSize.width(),s_undistortSize.height()));
 }
-
-
 
 } // namespace Mirror
