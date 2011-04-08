@@ -282,4 +282,17 @@ Gave up on opencv on windows for now.
 
 Continue with football++
 
-After all the filldling about with Mirror / OpenCV have to restore the build environment and build the OpenCV a new.
+After all the fiddling about with Mirror / OpenCV have to restore the build environment and build the OpenCV a new.
+Took a while. I've changed the build directory, so had to symlink the Resources into there for football tracker to find
+field "template".
+
+[ ] zoom in/out slider
+    added by the tracker to ... well, somewhere
+[ ] field quad editor
+[ ] track in perspective corrected field
+[ ] detect blobs
+[ ] for each blob
+    [ ] find anchor position (mid-low point of the bounding rect)
+    [ ] find area
+    [ ] calc histogram of may be 5 main colors
+    [ ] be ready to send the list of blobs in whatever format is expected from us

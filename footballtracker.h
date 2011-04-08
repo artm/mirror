@@ -6,11 +6,11 @@
 
 namespace Mirror {
 
-class FootballTracker : public Mirror::VisionFilter
+class FootballTracker : public VisionFilter
 {
     Q_OBJECT
 public:
-    explicit FootballTracker(Mirror::CompositeView * canvas, QObject *parent = 0);
+    explicit FootballTracker(CompositeView * canvas, QObject *parent = 0);
 
     void configureGUI(Ui::MirrorWindow * ui);
 
@@ -29,7 +29,7 @@ protected:
     cv::Rect m_fieldROI;
     bool m_foundField;
 
-    Mirror::ScratchGraphics * m_fieldOverlay, * m_playersOverlay;
+    ScratchGraphics * m_fieldOverlay, * m_playersOverlay;
 };
 
 } // namespace Mirror

@@ -13,6 +13,10 @@ class CompositeView : public QGraphicsView
 public:
     explicit CompositeView(QWidget *parent = 0);
 
+public slots:
+    void zoom(int percent);
+    void zoomFit();
+
 signals:
      void fileDrop(const QMimeData *mimeData = 0);
 
@@ -23,6 +27,8 @@ protected:
     void dropEvent(QDropEvent *event);
 
     void resizeEvent(QResizeEvent *event);
+
+    float m_zoomFactor;
 
 };
 

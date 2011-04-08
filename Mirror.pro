@@ -56,8 +56,8 @@ INCLUDEPATH += Shoulders/OpenCV-2.2.0/modules/objdetect/include
 INCLUDEPATH += Shoulders/OpenCV-2.2.0/modules/video/include
 
 macx {
-    LIBS += -LShoulders/OpenCV-2.2.0/build/3rdparty/lib
-    LIBS += -LShoulders/OpenCV-2.2.0/build/lib
+    LIBS += -L$$PWD/Shoulders/opencv-build-osx/3rdparty/lib
+    LIBS += -L$$PWD/Shoulders/opencv-build-osx/lib
 
     # OpenCV dependencies on a mac (needed when linking against static opencv)
     LIBS += -framework AGL -framework OpenGL  -framework Foundation -framework QTKit -framework Cocoa -framework QuartzCore

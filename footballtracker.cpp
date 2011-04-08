@@ -6,6 +6,7 @@
 #include <QCoreApplication>
 #include <QPushButton>
 #include <QKeyEvent>
+#include <QtGui>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -147,6 +148,15 @@ void FootballTracker::configureGUI(Ui::MirrorWindow * ui)
     mainWin->loadFile( QCoreApplication::applicationDirPath() + "/../../../Resources/voet1.MP4" );
 
     mainWin->installEventFilter(this);
+
+    QSlider * zoomSlider = new QSlider(Qt::Horizontal);
+    layout->addRow("Zoom out", zoomSlider);
+    zoomSlider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    zoomSlider->setRange(50,100);
+    zoomSlider->setValue(100);
+    connect(zoomSlider, SIGNAL(valueChanged(int)), m_canvas, SLOT(zoom(int)));
+
 }
 
 bool FootballTracker::eventFilter(QObject * obj, QEvent * event)
