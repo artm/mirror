@@ -44,6 +44,8 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
     appendVideoSlot("field", &m_field);
     appendVideoSlot("see through", &m_seeThrough);
 
+    appendVideoSlot("undistorted", &m_undistorted);
+
     QGraphicsScene *  scene = canvas->scene();
     scene->addItem( m_fieldOverlay = new ScratchGraphics );
     scene->addItem( m_playersOverlay = new ScratchGraphics );
@@ -100,6 +102,13 @@ void FootballTracker::filter(const cv::Mat& frame)
 
         m_foundField = true;
     } else {
+        // undistort...
+        if (m_fieldQuad.size() == 4) {
+            //m_undistorted.create( 640, 480, CV_8SC3 );
+            cv::warpPerspective( frame, m_undistorted, m_perspective, cv::Size2i(640,480),
+                                 cv::INTER_CUBIC );
+        }
+
         // we have ROI and a mask - search for little guys
         m_seeThrough = cv::Mat( frame.rows, frame.cols, CV_8UC3, 0);
         cv::Mat frameFrag(frame, m_fieldROI),
@@ -140,9 +149,11 @@ void FootballTracker::toggleOverlay()
     if (m_fieldOverlay->isVisible()) {
         m_fieldOverlay->hide();
         m_playersOverlay->hide();
+        m_fieldQuadGfx->hide();
     } else {
         m_fieldOverlay->show();
         m_playersOverlay->show();
+        m_fieldQuadGfx->show();
     }
 }
 
@@ -249,6 +260,20 @@ void FootballTracker::updateFieldQuadGfx()
     path.closeSubpath();
 
     m_fieldQuadGfx->setPath(path);
+
+    cv::Point2f src[4] = {
+        cv::Point2f(m_fieldQuad[0].x(),m_fieldQuad[0].y()),
+        cv::Point2f(m_fieldQuad[1].x(),m_fieldQuad[1].y()),
+        cv::Point2f(m_fieldQuad[2].x(),m_fieldQuad[2].y()),
+        cv::Point2f(m_fieldQuad[3].x(),m_fieldQuad[3].y()),
+    };
+    cv::Point2f dst[4] = {
+        cv::Point2f(0,0),
+        cv::Point2f(640,0),
+        cv::Point2f(640,480),
+        cv::Point2f(0,480),
+    };
+    m_perspective = cv::getPerspectiveTransform( src,  dst );
 }
 
 

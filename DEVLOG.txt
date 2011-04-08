@@ -288,8 +288,9 @@ field "template".
 
 [x] zoom in/out slider
     added by the tracker to ... well, somewhere
-[ ] field quad editor
+[x] field quad editor
     added by the tracker - a filter on canvas's mouse events...
+[ ] new processing phase: perspective corrected
 [ ] track in perspective corrected field
 [ ] detect blobs
 [ ] for each blob
