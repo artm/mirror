@@ -295,10 +295,10 @@ field "template".
 [x] detect blobs
 [x] adjust canvas geometry to current image
 
-[ ] easier way to zoom in / out.
+[x] easier way to zoom in / out.
 
 [ ] for each blob
-    [ ] find anchor position (mid-low point of the bounding rect)
-    [ ] find area
-    [ ] calc histogram of may be 5 main colors
+    [x] find anchor position (mid-low point of the bounding rect)
+    [x] find area
+    [ ] calc histogram of may be 3 main colors
     [ ] be ready to send the list of blobs in whatever format is expected from us

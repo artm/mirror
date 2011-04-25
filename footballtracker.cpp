@@ -132,7 +132,11 @@ void FootballTracker::filter(const cv::Mat& frame)
                         coord = QPointF( p.x, p.y );
                 }
 
-                QString sCoord = QString("%1,%2").arg(coord.x()/m_fieldnessBin.rows).arg(coord.y()/m_fieldnessBin.cols);
+                double area = cv::contourArea(cv::Mat(contours[i]));
+
+                QString sCoord = QString("%1,%2\nsize:%3")
+                        .arg(coord.x()/m_fieldnessBin.rows).arg(coord.y()/m_fieldnessBin.cols)
+                        .arg(area);
                 QGraphicsTextItem * text = new QGraphicsTextItem(sCoord, m_playersOverlay);
                 text->setPos(coord);
             }
