@@ -6,6 +6,9 @@
 
 class QSlider;
 
+class QNetworkReply;
+class QNetworkAccessManager;
+
 namespace Mirror {
 
 class FootballTracker : public VisionFilter
@@ -22,6 +25,8 @@ signals:
 public slots:
     void relearnBg() { m_foundField = false; }
     void toggleOverlay();
+
+    void replyFinished(QNetworkReply*);
 
 protected:
     void filter(const cv::Mat& frame);
@@ -42,6 +47,7 @@ protected:
     int m_dragCornerIdx;
     QPointF m_dragLastPos;
     QSlider * m_zoomSlider;
+    QNetworkAccessManager * m_network;
 
     static const QSize s_undistortSize;
 };

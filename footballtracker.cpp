@@ -8,6 +8,9 @@
 #include <QKeyEvent>
 #include <QtGui>
 
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -20,6 +23,7 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
     : Mirror::VisionFilter(canvas, parent)
     , m_foundField(false)
     , m_dragCornerIdx(-1)
+    , m_network(new QNetworkAccessManager(this))
 {
     QString prefix = QCoreApplication::applicationDirPath () + "/../../../Resources/";
     m_field = cv::imread((prefix+"field-sample.png").toStdString(), 3);
@@ -52,6 +56,9 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
 
     m_canvas->setAttribute(Qt::WA_AcceptTouchEvents, true); //set this to receive touch events
     m_canvas->grabGesture(Qt::PinchGesture);
+
+    connect(m_network, SIGNAL(finished(QNetworkReply*)),
+             this, SLOT(replyFinished(QNetworkReply*)));
 }
 
 void FootballTracker::filter(const cv::Mat& frame)
@@ -100,6 +107,8 @@ void FootballTracker::filter(const cv::Mat& frame)
     } else {
         // undistort...
         if (m_fieldQuad.size() == 4) {
+            QString url = "http://sndrv.nl/soccar/data.php?";
+
             cv::warpPerspective( frame, m_undistorted, m_perspective, cv::Size2i(s_undistortSize.width(), s_undistortSize.height()));
 
             cv::cvtColor( m_undistorted, m_hsv, CV_BGR2HSV );
@@ -122,7 +131,8 @@ void FootballTracker::filter(const cv::Mat& frame)
             cv::findContours( m_fieldnessBin, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
             m_playersOverlay->clear();
-            for(unsigned i = 1; i<contours.size(); ++i) {
+            for(unsigned i = 0; i<contours.size(); ++i) {
+
                 cv::approxPolyDP(cv::Mat(contours[i]), contours[i], 1.5, true);
 
                 m_playersOverlay->addContour( contours[i], QPen(QColor(128,128,255)), QBrush(QColor(128,128,255,100)) );
@@ -135,7 +145,6 @@ void FootballTracker::filter(const cv::Mat& frame)
 
                 QVector<QColor> colors(3);
                 findTopColors(contours, i, colors);
-
                 for( int c=0; c<colors.size(); ++c ) {
                     QGraphicsRectItem * r = new QGraphicsRectItem(0,0,10,10,m_playersOverlay);
                     r->setPos(coord.x()+c*7, coord.y()+c*7);
@@ -145,12 +154,27 @@ void FootballTracker::filter(const cv::Mat& frame)
                 double area = cv::contourArea(cv::Mat(contours[i]));
 
                 QString sCoord = QString("%1,%2\nsize:%3")
-                        .arg(coord.x()/m_fieldnessBin.rows).arg(coord.y()/m_fieldnessBin.cols)
+                        .arg(coord.x()/m_fieldnessBin.cols).arg(coord.y()/m_fieldnessBin.rows)
                         .arg(area);
                 QGraphicsTextItem * text = new QGraphicsTextItem(sCoord, m_playersOverlay);
                 text->setPos(coord);
 
+                if (i) url += "&";
+
+                url += QString("nr[]=%1&x[]=%2&y=%3&size=%4")
+                        .arg(i)
+                        .arg(coord.x()/m_fieldnessBin.cols,0,'f',2)
+                        .arg(coord.y()/m_fieldnessBin.rows,0,'f',2)
+                        .arg((int)area);
+                for( int c=0; c<colors.size(); ++c ) {
+                    url += QString("&color%1[]=%2").arg(c).arg( colors[c].name() );
+                }
+
+
             }
+
+            qDebug() << "Requesting: " << url;
+            m_network->get(QNetworkRequest(QUrl(url)));
 
         } else {
             // we have ROI and a mask - search for little guys
@@ -403,6 +427,12 @@ void Mirror::FootballTracker::findTopColors(const std::vector< std::vector< cv::
                     sranges[0] + bar.j * sranges[1] / histSize[1],
                     200); // intensity is от балды
     }
+}
+
+void Mirror::FootballTracker::replyFinished(QNetworkReply * reply)
+{
+    qDebug() << "got network reply" << (reply->error() ? reply->errorString() : "no error") ;
+    reply->deleteLater();
 }
 
 

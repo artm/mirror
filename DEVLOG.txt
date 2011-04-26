@@ -302,3 +302,4 @@ field "template".
     [x] find area
     [ ] calc histogram of may be 3 main colors
     [ ] be ready to send the list of blobs in whatever format is expected from us
+
