@@ -80,7 +80,6 @@ void FootballTracker::filter(const cv::Mat& frame)
                 longest = i;
         }
 
-        std::vector<int> hull;
         m_fieldROI = cv::boundingRect( cv::Mat( contours[longest] ) );
 
         const cv::Point * longestPts[] = { &(contours[longest][0]) };
@@ -124,12 +123,23 @@ void FootballTracker::filter(const cv::Mat& frame)
 
             m_playersOverlay->clear();
             for(unsigned i = 1; i<contours.size(); ++i) {
+                cv::approxPolyDP(cv::Mat(contours[i]), contours[i], 1.5, true);
+
                 m_playersOverlay->addContour( contours[i], QPen(QColor(128,128,255)), QBrush(QColor(128,128,255,100)) );
 
                 QPointF coord(contours[i][0].x, contours[i][0].y);
                 foreach(cv::Point p, contours[i]) {
                     if (p.y > coord.y())
                         coord = QPointF( p.x, p.y );
+                }
+
+                QVector<QColor> colors(3);
+                findTopColors(contours, i, colors);
+
+                for( int c=0; c<colors.size(); ++c ) {
+                    QGraphicsRectItem * r = new QGraphicsRectItem(0,0,10,10,m_playersOverlay);
+                    r->setPos(coord.x()+c*7, coord.y()+c*7);
+                    r->setBrush( QBrush(colors[c]) );
                 }
 
                 double area = cv::contourArea(cv::Mat(contours[i]));
@@ -139,6 +149,7 @@ void FootballTracker::filter(const cv::Mat& frame)
                         .arg(area);
                 QGraphicsTextItem * text = new QGraphicsTextItem(sCoord, m_playersOverlay);
                 text->setPos(coord);
+
             }
 
         } else {
@@ -315,3 +326,83 @@ void FootballTracker::updateFieldQuadGfx()
 }
 
 } // namespace Mirror
+
+/* helper struct for histogram sorting */
+struct Bar
+{
+    int i, j;
+    float v;
+    Bar() : i(0),j(0),v(-1) {}
+    Bar(int _i, int _j, int _v)
+        : i(_i), j(_j), v(_v)
+    {}
+
+    static bool lesser(const Bar& a, const Bar& b)
+    {
+        return a.v < b.v;
+    }
+    static bool greater(const Bar& a, const Bar& b)
+    {
+        return a.v > b.v;
+    }
+
+};
+
+void Mirror::FootballTracker::findTopColors(const std::vector< std::vector< cv::Point > >& blobs,
+                                            int blobIndex,
+                                            QVector<QColor>& colors)
+{
+    // make a blob-shaped mask
+    cv::Rect bounds = cv::boundingRect( cv::Mat(blobs[blobIndex]) );
+    cv::Mat mask( bounds.size(), CV_8UC1);
+    // draw a blob on a mask
+    cv::drawContours( mask, blobs, blobIndex, 255, -1 /* fill */, 8, std::vector<cv::Vec4i>(), INT_MAX,
+                     cv::Point2d( -bounds.x, -bounds.y));
+    // make a histogram of a blob
+
+    int channels[] = { 0, 1 }; // hue, saturation
+    int histSize[] = { 30, 30 }; // quantization of hue, saturation
+    float hranges[] = { 0, 180 }, sranges[] = { 0, 256 };
+    const float * ranges[] = { hranges, sranges };
+
+    cv::Mat cutout(m_hsv,bounds), hist;
+
+    cv::calcHist( &cutout,
+             1, // one array
+             channels,
+             mask,
+             hist,
+             2, // dimensions
+             histSize,
+             ranges,
+             true, // the histogram is uniform
+             false // don't accumulate
+             );
+
+    // find the n tallest bars
+    unsigned int nTallest = colors.size();
+
+    std::vector<Bar> tallest;
+    for(int i = 0; i< histSize[0]; ++i)
+        for(int j = 0; j<histSize[1]; ++j) {
+            Bar b(i,j,hist.at<float>(i, j));
+            std::vector<Bar>::iterator place = std::lower_bound(tallest.begin(), tallest.end(), b, Bar::greater);
+            if (tallest.size() < nTallest || place != tallest.end())
+                tallest.insert(place, b);
+            if (tallest.size() > nTallest) {
+                tallest.resize(nTallest);
+            }
+        }
+
+    // convert histogram bar indices to colors (i == hue, j == saturation)
+    int n = 0;
+    foreach(Bar bar, tallest) {
+        colors[n++] = QColor::fromHsv(
+                    // 2* is due to different ranges for Hue in OpenCV and Qt
+                    2 * (hranges[0] + bar.i * hranges[1] / histSize[0]),
+                    sranges[0] + bar.j * sranges[1] / histSize[1],
+                    200); // intensity is от балды
+    }
+}
+
+

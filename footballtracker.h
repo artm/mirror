@@ -15,6 +15,7 @@ public:
     explicit FootballTracker(CompositeView * canvas, QObject *parent = 0);
 
     void configureGUI(Ui::MirrorWindow * ui);
+    void findTopColors(const std::vector< std::vector< cv::Point > >& blobs, int blobIndex, QVector<QColor>& colors);
 
 signals:
 
