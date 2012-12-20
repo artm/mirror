@@ -26,6 +26,7 @@ FootballTracker::FootballTracker( Mirror::CompositeView * canvas, QObject *paren
     , m_network(new QNetworkAccessManager(this))
 {
     QString prefix = QCoreApplication::applicationDirPath () + "/../../../Resources/";
+    qDebug() << prefix;
     m_field = cv::imread((prefix+"field-sample.png").toStdString(), 3);
     cv::cvtColor( m_field, m_field, CV_BGR2HSV );
     int channels[] = { 0, 1 }; // hue, saturation
@@ -425,7 +426,7 @@ void Mirror::FootballTracker::findTopColors(const std::vector< std::vector< cv::
                     // 2* is due to different ranges for Hue in OpenCV and Qt
                     2 * (hranges[0] + bar.i * hranges[1] / histSize[0]),
                     sranges[0] + bar.j * sranges[1] / histSize[1],
-                    200); // intensity is от балды
+                    200); // intensity?
     }
 }
 
